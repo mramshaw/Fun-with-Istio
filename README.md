@@ -14,13 +14,13 @@ on pod specifications.
 1. Required:
 
     Service ports must be named. The port names must be of the form
-    <protocol>[-<suffix>] with http, http2, grpc, mongo, or redis as
-    the <protocol> in order to take advantage of Istio’s routing features.
-    For example, name: http2-foo or name: http are valid port names,
-    but name: http2foo is not. If the port name does not begin with a
-    recognized prefix or if the port is unnamed, traffic on the port
-    will be treated as plain TCP traffic (unless the port explicitly
-    uses Protocol: UDP to signify a UDP port).
+    __\<protocol\>[-\<suffix\>]__ with ___http___, ___http2___, ___grpc___,
+    ___mongo___, or ___redis___ as the __\<protocol\>__ in order to take
+    advantage of Istio’s routing features. For example, __name: http2-foo__
+    or __name: http__ are valid port names, but __name: http2foo__ is not.
+    If the port name does not begin with a recognized prefix or if the port
+    is unnamed, traffic on the port will be treated as plain TCP traffic
+    (unless the port explicitly uses __Protocol: UDP__ to signify a UDP port).
 
 2. Recommended:
 
