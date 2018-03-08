@@ -42,10 +42,13 @@ on pod specifications.
 
 ## Starting minikube
 
-For this exercise I will use __minikube__ (a local Kubernetes). To save time,
-I have created a script `minikube-istio.sh` to launch minikube with all of the
-needed options (the most important are the last two: `MutatingAdmissionWebhook`
-and `ValidatingAdmissionWebhook` - these enable __automatic sidecar injection__).
+There are various options for installing Istio. For this exercise I will use
+__minikube__ (a local Kubernetes). To save time, I have created a script
+`minikube-istio.sh` to launch minikube with all of the needed options (the
+most important are: `MutatingAdmissionWebhook` and `ValidatingAdmissionWebhook`
+ - which enable [automatic sidecar injection](#automatic-sidecar-injection)).
+
+Note that the __order__ of the options is important.
 
     $ ./minikube-istio.sh
     Starting local Kubernetes v1.9.0 cluster...
@@ -60,7 +63,7 @@ and `ValidatingAdmissionWebhook` - these enable __automatic sidecar injection__)
     Loading cached images from config file.
     $
 
-And verify we have the `admissionregistration.k8s.io/v1beta1` API enabled:
+Verify we have the `admissionregistration.k8s.io/v1beta1` API enabled:
 
     $ kubectl api-versions | grep admissionregistration
     admissionregistration.k8s.io/v1alpha1
@@ -68,6 +71,120 @@ And verify we have the `admissionregistration.k8s.io/v1beta1` API enabled:
     $
 
 [The second line indicates that we *do*.]
+
+
+## Istio
+
+1. Download [Istio](https://github.com/istio/istio/releases) and uncompress it into this directory.
+
+2. [Optional] The compressed istio can now be deleted.
+
+3. Change directory into the Istio directory.
+
+4. Launch Istio as follows:
+
+    $ kubectl apply -f install/kubernetes/istio.yaml
+
+5. Monitor what's happening with the following command:
+
+    $ kubectl get all --namespace=istio-system
+
+6. Generate a CSR as follows:
+
+    ./install/kubernetes/webhook-create-signed-cert.sh \
+        --service istio-sidecar-injector \
+        --namespace istio-system \
+        --secret sidecar-injector-certs
+
+7. Install the Sidecar Injector ConfigMap as follows:
+
+    $ kubectl apply -f install/kubernetes/istio-sidecar-injector-configmap-release.yaml
+
+    [This is the `release` version - note that there is a `debug` version as well.]
+
+8. Install the caBundle (Certificate Authourity bundle?) as follows:
+
+    $ cat install/kubernetes/istio-sidecar-injector.yaml | \
+         ./install/kubernetes/webhook-patch-ca-bundle.sh > \
+         install/kubernetes/istio-sidecar-injector-with-ca-bundle.yaml
+
+9. Install the webhook:
+
+    $ kubectl apply -f install/kubernetes/istio-sidecar-injector-with-ca-bundle.yaml
+
+    Verify it is running:
+
+    $ kubectl get deployment --selector istio=sidecar-injector --namespace=istio-system
+
+
+## Automatic sidecar injection
+
+Once everything is set up, it should be possible to annotate containers for
+sidecar (envoy) injection as follows:
+
+    sidecar.istio.io/inject: "true"
+
+[Can be applied via YAML/JSON or via `kubectl`.]
+
+Verify `default` namespace has been annotated as follows:
+
+    $ kubectl get namespace -L istio-injection
+    NAME           STATUS    AGE       ISTIO-INJECTION
+    default        Active    21d       enabled
+    istio-system   Active    15m       
+    kube-public    Active    21d       
+    kube-system    Active    21d       
+    $
+
+    $ kubectl get pod
+    NAME                            READY     STATUS        RESTARTS   AGE
+    sleep-776b7bcdcd-dpnlq          1/1       Terminating   0          8m
+    sleep-776b7bcdcd-p2gts          0/2       Init:0/1      0          3s
+    $
+
+
+## Addons
+
+Install any desired addons (Grafana, Prometheus, Zipkin) as follows:
+
+    $ kubectl apply -f install/kubernetes/addons/grafana.yaml
+
+Extract the needed network details as follows:
+
+    $ export GRAFANA_URL=$(kubectl get po -l app=grafana -n istio-system -o jsonpath={.items[0].status.hostIP}):$(kubectl get svc grafana -n istio-system -o jsonpath={.spec.ports[0].nodePort})
+
+Can then open a dashboard as follows:
+
+    http://$GRAFANA_URL/dashboard/db/istio-dashboard
+
+Or (using `minikube`):
+
+    $ minikube service --url svc/grafana
+
+Can port-forward as follows:
+
+    $ $ kubectl port-forward grafana-89f97d9c-qvqrp -n istio-system 3000:3000
+
+
+## Remove sidecar injection
+
+Delete sidecar injection as follows:
+
+    $ kubectl delete -f install/kubernetes/istio-sidecar-injector-with-ca-bundle.yaml
+
+
+## Stopping Istio
+
+Tear down Istio as follows:
+
+    $ kubectl delete -f install/kubernetes/istio.yaml
+
+
+## Stopping minikube
+
+As usual:
+
+    $ minikube stop
 
 
 ## Versions
