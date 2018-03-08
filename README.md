@@ -5,9 +5,11 @@
 Having played with the [0.1.6 release](https://github.com/mramshaw/istio-ingress-tutorial),
 it seemed to be time to take another look at Istio and the current __0.6__ release.
 
+
 ## Istio pod spec requirements
 
-Istio imposes some requirements (and suggestions) on pod specifications.
+Istio imposes some [requirements (and suggestions)](https://istio.io/docs/setup/kubernetes/sidecar-injection.html)
+on pod specifications.
 
 1. Required:
 
@@ -28,7 +30,6 @@ Istio imposes some requirements (and suggestions) on pod specifications.
     something meaningful. The `app` label is used to add contextual information
     in distributed tracing.
 
-https://istio.io/docs/setup/kubernetes/sidecar-injection.html
 
 ## Istio requirements
 
@@ -37,3 +38,54 @@ https://istio.io/docs/setup/kubernetes/sidecar-injection.html
     [Manual proxy injection can be used for earlier versions of Kubernetes.]
 
 2. Minikube version v0.25.0 or later is required for Kubernetes v1.9.
+
+
+## Starting minikube
+
+For this exercise I will use __minikube__ (a local Kubernetes). To save time,
+I have created a script `minikube-istio.sh` to launch minikube with all of the
+needed options (the most important are the last two: `MutatingAdmissionWebhook`
+and `ValidatingAdmissionWebhook` - these enable __automatic sidecar injection__).
+
+    $ ./minikube-istio.sh
+    Starting local Kubernetes v1.9.0 cluster...
+    Starting VM...
+    Getting VM IP address...
+    Moving files into cluster...
+    Setting up certs...
+    Connecting to cluster...
+    Setting up kubeconfig...
+    Starting cluster components...
+    Kubectl is now configured to use the cluster.
+    Loading cached images from config file.
+    $
+
+And verify we have the `admissionregistration.k8s.io/v1beta1` API enabled:
+
+    $ kubectl api-versions | grep admissionregistration
+    admissionregistration.k8s.io/v1alpha1
+    admissionregistration.k8s.io/v1beta1
+    $
+
+[The second line indicates that we *do*.]
+
+
+## Versions
+
+* Istio 0.6
+* Kubernetes v1.9.0
+* minikube v0.25.0
+* kubectl (Client: v1.8.6, Server: v1.9.0)
+* Docker 17.12.1-ce (Client and Server)
+
+
+## To Do
+
+* [ ] Complete the Isto website tutorials
+
+
+## Credits
+
+Inspired by:
+
+    http://blog.kubernetes.io/2017/05/managing-microservices-with-istio-service-mesh.html
