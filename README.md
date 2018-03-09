@@ -44,9 +44,9 @@ on pod specifications.
 
 There are various options for installing Istio. For this exercise I will use
 __minikube__ (a local Kubernetes). To save time, I have created a script
-`minikube-istio.sh` to launch minikube with all of the needed options (the
-most important are: `MutatingAdmissionWebhook` and `ValidatingAdmissionWebhook`
- - which enable [automatic sidecar injection](#automatic-sidecar-injection)).
+`minikube-istio.sh` to launch minikube with the needed options (the most
+important are `MutatingAdmissionWebhook` and `ValidatingAdmissionWebhook`
+which enable [automatic sidecar injection](#automatic-sidecar-injection)).
 
 Note that the __order__ of the options is important.
 
@@ -83,38 +83,52 @@ Verify we have the `admissionregistration.k8s.io/v1beta1` API enabled:
 
 4. Launch Istio as follows:
 
+    ```
     $ kubectl apply -f install/kubernetes/istio.yaml
+    ```
 
 5. Monitor what's happening with the following command:
 
+    ```
     $ kubectl get all --namespace=istio-system
+    ```
 
 6. Generate a CSR as follows:
 
+    ```
     ./install/kubernetes/webhook-create-signed-cert.sh \
         --service istio-sidecar-injector \
         --namespace istio-system \
         --secret sidecar-injector-certs
+    ```
 
 7. Install the Sidecar Injector ConfigMap as follows:
 
+    ```
     $ kubectl apply -f install/kubernetes/istio-sidecar-injector-configmap-release.yaml
+    ```
 
     [This is the `release` version - note that there is a `debug` version as well.]
 
 8. Install the caBundle (Certificate Authourity bundle?) as follows:
 
+    ```
     $ cat install/kubernetes/istio-sidecar-injector.yaml | \
          ./install/kubernetes/webhook-patch-ca-bundle.sh > \
          install/kubernetes/istio-sidecar-injector-with-ca-bundle.yaml
+    ```
 
 9. Install the webhook:
 
+    ```
     $ kubectl apply -f install/kubernetes/istio-sidecar-injector-with-ca-bundle.yaml
+    ```
 
     Verify it is running:
 
+    ```
     $ kubectl get deployment --selector istio=sidecar-injector --namespace=istio-system
+    ```
 
 
 ## Automatic sidecar injection
