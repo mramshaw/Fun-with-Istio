@@ -159,25 +159,23 @@ Verify `default` namespace has been annotated as follows:
 
 ## Addons
 
-Install any desired addons (Grafana, Prometheus, Zipkin) as follows:
+Install any desired addons (Prometheus, Grafana, Zipkin) as follows:
 
-    $ kubectl apply -f install/kubernetes/addons/grafana.yaml
+    $ kubectl apply -f install/kubernetes/addons/prometheus.yaml
 
-Extract the needed network details as follows:
+[In order to have Grafana it seems to be necessary to install prometheus first.]
 
-    $ export GRAFANA_URL=$(kubectl get po -l app=grafana -n istio-system -o jsonpath={.items[0].status.hostIP}):$(kubectl get svc grafana -n istio-system -o jsonpath={.spec.ports[0].nodePort})
+We are using __minikube__ and will want to access Grafana, so edit
+`install/kubernetes/addons/grafana.yaml`, change the Service type
+from `ClusterIP` to `NodePort`, and save it as `../grafana.yaml`.
 
-Can then open a dashboard as follows:
+Can then run it as follows:
 
-    http://$GRAFANA_URL/dashboard/db/istio-dashboard
+    $ kubectl apply -f ../grafana.yaml
 
-Or (using `minikube`):
+Can then open our Grafana dashboard as follows:
 
-    $ minikube service --url svc/grafana
-
-Can port-forward as follows:
-
-    $ $ kubectl port-forward grafana-89f97d9c-qvqrp -n istio-system 3000:3000
+    $ minikube service --url grafana -n istio-system
 
 
 ## Remove sidecar injection
@@ -185,6 +183,27 @@ Can port-forward as follows:
 Delete sidecar injection as follows:
 
     $ kubectl delete -f install/kubernetes/istio-sidecar-injector-with-ca-bundle.yaml
+
+
+## Remove sidecar injection certificates
+
+Delete sidecar injection certificates as follows:
+
+    kubectl -n istio-system delete secret sidecar-injector-certs
+
+
+## Delete CSR
+
+Delete the CSR as follows:
+
+    $ kubectl delete csr istio-sidecar-injector.istio-system
+
+
+## Remove Injection label
+
+Remove the `default` namespace injection label as follows:
+
+    $ kubectl label namespace default istio-injection-
 
 
 ## Stopping Istio
