@@ -2,6 +2,9 @@
 
 [Istio](https://istio.io/) is a very useful ___service mesh___.
 
+It comes with addons, such as [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com/)
+and [Zipkin](https://zipkin.io/).
+
 Having played with the [0.1.6 release](https://github.com/mramshaw/istio-ingress-tutorial),
 it seemed to be time to take another look at Istio and the current __0.6__ release.
 
@@ -133,22 +136,44 @@ Verify we have the `admissionregistration.k8s.io/v1beta1` API enabled:
 
 ## Automatic sidecar injection
 
-Once everything is set up, it should be possible to annotate containers for
-sidecar (envoy) injection as follows:
+Once everything is set up, it should be possible to label namespaces and/or annotate deployments for sidecar injection.
 
-    sidecar.istio.io/inject: "true"
 
-[Can be applied via YAML/JSON or via `kubectl`.]
+#### Label Namespace
+
+Verify no namespaces are annotated as follows:
+
+    $ kubectl get namespace -L istio-injection
+    NAME           STATUS    AGE       ISTIO-INJECTION
+    default        Active    21d
+    istio-system   Active    15m       
+    kube-public    Active    21d       
+    kube-system    Active    21d       
+    $
+
+Launch a pod:
+
+    $ kubectl apply -f samples/sleep/sleep.yaml
+
+Label the `default` namespace with `istio-injection=enabled`:
+
+    $ kubectl label namespace default istio-injection=enabled
 
 Verify `default` namespace has been annotated as follows:
 
     $ kubectl get namespace -L istio-injection
     NAME           STATUS    AGE       ISTIO-INJECTION
     default        Active    21d       enabled
-    istio-system   Active    15m       
-    kube-public    Active    21d       
-    kube-system    Active    21d       
+    istio-system   Active    15m
+    kube-public    Active    21d
+    kube-system    Active    21d
     $
+
+Kill the existing `sleep` pod:
+
+    $ kubectl delete po/sleep-776b7bcdcd-dpnlq
+
+Verify that it respawns with a sidecar:
 
     $ kubectl get pod
     NAME                            READY     STATUS        RESTARTS   AGE
@@ -157,17 +182,40 @@ Verify `default` namespace has been annotated as follows:
     $
 
 
+#### Annotate Deployment
+
+Annotate deployments for sidecar (envoy) injection as follows:
+
+    $ kubectl annotate po sleep-776b7bcdcd-s5c5g sidecar.istio.io/inject=true
+
+OR
+
+    $ kubectl annotate po sleep-776b7bcdcd-s5c5g sidecar.istio.io/inject=false
+
+OR
+
+    $ kubectl annotate po sleep-776b7bcdcd-s5c5g sidecar.istio.io/inject=true --overwrite
+
+[Can also be applied via YAML or JSON.]
+
+Remove annotation with:
+
+    $ kubectl annotate po sleep-776b7bcdcd-s5c5g sidecar.istio.io/inject-
+
+
 ## Addons
 
 Install any desired addons (Prometheus, Grafana, Zipkin) as follows:
 
     $ kubectl apply -f install/kubernetes/addons/prometheus.yaml
 
-[In order to have Grafana it seems to be necessary to install prometheus first.]
+[In order to have Grafana it seems to be necessary to install Prometheus first.]
 
 We are using __minikube__ and will want to access Grafana, so edit
 `install/kubernetes/addons/grafana.yaml`, change the Service type
 from `ClusterIP` to `NodePort`, and save it as `../grafana.yaml`.
+
+[And the same for `install/kubernetes/addons/zipkin.yaml`.]
 
 Can then run it as follows:
 
