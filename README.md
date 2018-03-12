@@ -1,12 +1,19 @@
 # Fun with Istio
 
 [Istio](https://istio.io/) is a very useful ___service mesh___.
+As such, it handles service-to-service communications.
 
 It comes with addons, such as [Prometheus](https://prometheus.io/), [Grafana](https://grafana.com/)
 and [Zipkin](https://zipkin.io/).
 
 Having played with the [0.1.6 release](https://github.com/mramshaw/istio-ingress-tutorial),
 it seemed to be time to take another look at Istio and the current __0.6__ release.
+
+The plan of attack is as follows:
+
+* [Final teardown](09-Teardown.md)
+* [Software Versions](#versions)
+* [Still To Do](#to-do)
 
 
 ## Istio pod spec requirements
@@ -138,6 +145,13 @@ Verify we have the `admissionregistration.k8s.io/v1beta1` API enabled:
 
 Once everything is set up, it should be possible to label namespaces and/or annotate deployments for sidecar injection.
 
+While it would be possible to do this in a 'brute force' manner with Kubernetes
+[daemonsets](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/),
+most situations will call for a more nuanced approach. For instance, it is perfectly possible to have
+Prometheus monitor __itself__, but in normal circumstances this is not really desirable. Or optimal.
+Or even all that useful. However, daemonsets do make a lot of sense for installing
+loggers.
+
 
 #### Label Namespace
 
@@ -202,6 +216,10 @@ Remove annotation with:
 
     $ kubectl annotate po sleep-776b7bcdcd-s5c5g sidecar.istio.io/inject-
 
+And delete pod:
+
+    $ kubectl delete -f samples/sleep/sleep.yaml
+
 
 ## Addons
 
@@ -226,46 +244,7 @@ Can then open our Grafana dashboard as follows:
     $ minikube service --url grafana -n istio-system
 
 
-## Remove sidecar injection
-
-Delete sidecar injection as follows:
-
-    $ kubectl delete -f install/kubernetes/istio-sidecar-injector-with-ca-bundle.yaml
-
-
-## Remove sidecar injection certificates
-
-Delete sidecar injection certificates as follows:
-
-    kubectl -n istio-system delete secret sidecar-injector-certs
-
-
-## Delete CSR
-
-Delete the CSR as follows:
-
-    $ kubectl delete csr istio-sidecar-injector.istio-system
-
-
-## Remove Injection label
-
-Remove the `default` namespace injection label as follows:
-
-    $ kubectl label namespace default istio-injection-
-
-
-## Stopping Istio
-
-Tear down Istio as follows:
-
-    $ kubectl delete -f install/kubernetes/istio.yaml
-
-
-## Stopping minikube
-
-As usual:
-
-    $ minikube stop
+Can now proceed to [Final teardown](09-Teardown.md).
 
 
 ## Versions
